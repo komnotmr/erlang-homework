@@ -1,0 +1,2 @@
+-define(ERROR, error).
+-define(SUCCESS, success).
