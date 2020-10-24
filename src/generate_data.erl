@@ -8,7 +8,6 @@
 readNames(Fin) ->
     case file:read_file(Fin) of
         { ok, Bin } ->
-            file:read_file(Fin),
             { ok, string:tokens(erlang:binary_to_list(Bin), "\n")};
         _ ->
             { error, []}
