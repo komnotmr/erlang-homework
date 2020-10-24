@@ -1,88 +1,94 @@
 -module(calc_statistics).
 
--export([calc/1, auto/0, readLines/1, parseToRecords/1, getMin/1, getMax/1]).
+-export([
+    calc/1,
+    auto/0
+]).
 
 -record(user, {
     name,
     age
 }).
 
+%%% split
 split(Str, Del) -> string:tokens(Str, Del).
 
+%%% readLines
 readLines(Fin) ->
     case file:read_file(Fin) of
-        { ok, Bin } ->
-            BinData = erlang:binary_to_list(Bin),
-            Lines = split(BinData, "\n"),
-            io:format("[~B]\n", [length(Lines)]),
-            { ok, Lines};
+        { ok, Bin } -> {
+                ok,
+                split(erlang:binary_to_list(Bin), "\n")
+            };
         _ ->
             { error, []}
     end.
 
-%%% start parseToRecords
+%%% parseToRecords
 parseToRecords([]) -> [];
 parseToRecords(Lines) ->
-    % string:to_integer(AgeStr)
     ParseAge = fun(Age) ->
         {PAge, _} = string:to_integer(Age),
         PAge
     end,
-    _Splitted = [ split(Line, ",") || Line <- Lines ],
-    Records = [ #user{ name = Name, age = ParseAge(Age) } || [ Age, Name] <- _Splitted ],
-    Records.
-%%% end parseToRecords
+    [
+        #user{
+            name = Name,
+            age = ParseAge(Age)
+        }
+        || [ Age, Name] <- [ split(Line, ",") || Line <- Lines ]
+    ].
 
-%%% start printRecords
+%%% printRecords
 printRecords([]) -> ok;
 printRecords([H|T]) ->
     case H of
         { user, Name, Age } ->
-            io:format("\~s \~s~n", [Name, Age]),
+            io:format("~s:~b~n", [Name, Age]),
             printRecords(T);
         _ -> printRecords(T)
     end.
-%%% end printRecords
 
-%%% start print list
+%%% print
 print([]) -> ok;
 print([H|T]) ->
-    io:format("\~b\n", [H]),
+    io:format("~b~n", [H]),
     print(T).
-%%% end printlist
 
-%%% start getSum
+%%% getSum
 getSum([H|T]) -> getSum(T, H).
 getSum([], Acc) -> Acc;
 getSum([H|T], Acc) -> getSum(T, Acc + H).
-%%% end getSum
 
-%%% start getMin
+%%% getMin
 getMin([H|T]) -> getMin(T, H).
 getMin([], Min) -> Min;
 getMin([H|T], Min) when H < Min -> getMin(T, H);
 getMin([_|T], Min) -> getMin(T, Min).
-%%% end getMin
 
-%%% start getMax
+%%% getMax
 getMax([H|T]) -> getMax(T, H).
 getMax([], Max) -> Max;
 getMax([H|T], Max) when H > Max -> getMax(T, H);
 getMax([_|T], Max) -> getMax(T, Max).
-%%% end getMax
 
+%%% calc
 calc(Fin) ->
     { _, Lines} = readLines(Fin),
     Records = parseToRecords(Lines),
-    % printRecords(Records),
     Ages = [User#user.age || User <- Records],
-    print(Ages),
-    Len = length(Ages),
+    % printRecords(Records),
+    % print(Ages),
+    CountRecords = length(Ages),
     AgeMin = getMin(Ages),
     AgeMax = getMax(Ages),
-    AgeSum = getSum(Ages),
-    Avg = AgeSum/Len,
-    % io:format("Avg:\~B, Max:\~B, Min:\~B", [Avg, AgeMax, AgeMin]),
+    Avg = getSum(Ages)/CountRecords,
+    io:format("Records count:~b~nAvg:~f, Max:~b, Min:~b~n", [
+        CountRecords
+        , Avg
+        , AgeMax
+        , AgeMin
+    ]),
     { Avg, AgeMax, AgeMin}.
 
 auto() ->
